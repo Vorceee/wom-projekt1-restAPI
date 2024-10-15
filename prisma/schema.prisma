@@ -15,14 +15,50 @@ datasource db {
 
 model User {
   id       String @id @default(auto()) @map("_id") @db.ObjectId
-  username String @unique
+  name     String
   password String
-  boards   Board[]
+  friends  Friends[] @relation("UserFriends")
+  boards   Boards[]
 }
 
-model Board {
-  id       String  @id @default(auto()) @map("_id") @db.ObjectId
-  title    String
-  ownerId  String  @db.ObjectId
-  owner    User    @relation(fields: [ownerId], references: [id])
+model Friends {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String  @db.ObjectId
+  friend User    @relation(fields: [friendId], references: [id], onDelete: Cascade)
+  friendId String @db.ObjectId
+}
+
+model Boards {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  owner  User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String @db.ObjectId
+  name   String
+  tickets Ticket[]
+}
+
+model Ticket {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  board     Boards   @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  boardId   String   @db.ObjectId
+  content   TicketContent?
+  location  TicketLocations?
+}
+
+model TicketContent {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  ticket    Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketId  String @db.ObjectId
+  text      String @db.Text
+  createdBy User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdById String @db.ObjectId
+  date      DateTime
+}
+
+model TicketLocations {
+  id      String  @id @default(auto()) @map("_id") @db.ObjectId
+  ticket  Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketId String @db.ObjectId
+  x       Int
+  y       Int
 }
