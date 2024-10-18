@@ -1,64 +1,55 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "mongodb"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL") // MongoDB connection string
 }
 
 model User {
-  id       String @id @default(auto()) @map("_id") @db.ObjectId
-  name     String
-  password String
-  friends  Friends[] @relation("UserFriends")
-  boards   Boards[]
+  id                 String             @id @default(auto()) @map("_id") @db.ObjectId
+  name               String             @unique
+  password           String
+  friends            Friend[]           @relation("UserFriends")
+  friendOf           Friend[]           @relation("FriendOf")
+  boardsOwned        Board[]            @relation("BoardOwner") // One-to-many relation for boards owned
+  boardsParticipated BoardParticipant[] // Many-to-many relation using BoardParticipant
+  Ticket             Ticket[]
 }
 
-model Friends {
-  id     String  @id @default(auto()) @map("_id") @db.ObjectId
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String  @db.ObjectId
-  friend User    @relation(fields: [friendId], references: [id], onDelete: Cascade)
+model Board {
+  id           String             @id @default(auto()) @map("_id") @db.ObjectId
+  owner        User               @relation("BoardOwner", fields: [ownerId], references: [id])
+  ownerId      String             @db.ObjectId
+  name         String
+  participants BoardParticipant[] // Many-to-many relation using BoardParticipant
+  tickets      Ticket[]
+}
+
+model BoardParticipant {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String @db.ObjectId
+  board   Board  @relation(fields: [boardId], references: [id])
+  boardId String @db.ObjectId
+}
+
+model Friend {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  user     User   @relation("UserFriends", fields: [userId], references: [id])
+  userId   String @db.ObjectId
+  friend   User   @relation("FriendOf", fields: [friendId], references: [id])
   friendId String @db.ObjectId
 }
 
-model Boards {
-  id     String  @id @default(auto()) @map("_id") @db.ObjectId
-  owner  User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  ownerId String @db.ObjectId
-  name   String
-  tickets Ticket[]
-}
-
 model Ticket {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  board     Boards   @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  boardId   String   @db.ObjectId
-  content   TicketContent?
-  location  TicketLocations?
-}
-
-model TicketContent {
-  id        String @id @default(auto()) @map("_id") @db.ObjectId
-  ticket    Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  ticketId  String @db.ObjectId
-  text      String @db.Text
-  createdBy User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  content     String
+  createdBy   User   @relation(fields: [createdById], references: [id])
   createdById String @db.ObjectId
-  date      DateTime
-}
-
-model TicketLocations {
-  id      String  @id @default(auto()) @map("_id") @db.ObjectId
-  ticket  Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  ticketId String @db.ObjectId
-  x       Int
-  y       Int
+  board       Board  @relation(fields: [boardId], references: [id])
+  boardId     String @db.ObjectId
+  x           Int
+  y           Int
 }
