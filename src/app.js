@@ -8,7 +8,7 @@ app.use(express.json());
 
 app.use('/api/users', userRoutes);
 
-app.use('/api/boards', boardRoutes); 
+app.use('/api/boards', boardRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');

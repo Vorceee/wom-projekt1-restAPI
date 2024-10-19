@@ -42,4 +42,125 @@ const getBoards = async (req, res) => {
   }
 };
 
-module.exports = { createBoard, getBoards };
+const addTicket = async (req, res) => {
+  const { id } = req.params; 
+  const { content, x, y } = req.body; 
+  const { userId } = req.user; 
+
+  try {
+    const board = await prisma.board.findFirst({
+      where: {
+        id,
+        OR: [
+          { ownerId: userId },
+          { participants: { some: { userId } } }
+        ]
+      }
+    });
+
+    if (!board) {
+      return res.status(403).json({ error: 'You do not have access to this board.' });
+    }
+
+    const ticket = await prisma.ticket.create({
+      data: {
+        content,
+        x,
+        y,
+        board: { connect: { id } }, 
+        createdBy: { connect: { id: userId } }, 
+      },
+    });
+
+    res.status(201).json({ message: 'Ticket added successfully', ticket });
+  } catch (err) {
+    res.status(500).json({ error: 'Error adding ticket', details: err.message });
+  }
+};
+
+const getTickets = async (req, res) => {
+  const { id } = req.params; 
+  const { userId } = req.user; 
+
+  try {
+    const board = await prisma.board.findFirst({
+      where: {
+        id,
+        OR: [
+          { ownerId: userId },
+          { participants: { some: { userId } } }
+        ]
+      }
+    });
+
+    if (!board) {
+      return res.status(403).json({ error: 'You do not have access to this board.' });
+    }
+
+    const tickets = await prisma.ticket.findMany({
+      where: { boardId: id },
+    });
+
+    res.json(tickets);
+  } catch (err) {
+    res.status(500).json({ error: 'Error fetching tickets', details: err.message });
+  }
+};
+
+const updateTicket = async (req, res) => {
+  const { ticketId } = req.params; 
+  const { content, x, y } = req.body;  
+  const { userId } = req.user;  
+
+  try {
+    const ticket = await prisma.ticket.findFirst({
+      where: {
+        id: ticketId,
+        createdById: userId, 
+      },
+    });
+
+    if (!ticket) {
+      return res.status(403).json({ error: 'You do not have access to update this ticket.' });
+    }
+    const updatedTicket = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: {
+        content: content !== undefined ? content : ticket.content,
+        x: x !== undefined ? x : ticket.x,
+        y: y !== undefined ? y : ticket.y,
+      },
+    });
+
+    res.json({ message: 'Ticket updated successfully', ticket: updatedTicket });
+  } catch (err) {
+    res.status(500).json({ error: 'Error updating ticket', details: err.message });
+  }
+};
+
+const deleteTicket = async (req, res) => {
+  const { ticketId } = req.params; 
+  const { userId } = req.user; 
+  try {
+    const ticket = await prisma.ticket.findFirst({
+      where: {
+        id: ticketId,
+        createdById: userId, 
+      },
+    });
+
+    if (!ticket) {
+      return res.status(403).json({ error: 'You do not have access to delete this ticket.' });
+    }
+
+    await prisma.ticket.delete({
+      where: { id: ticketId },
+    });
+
+    res.json({ message: 'Ticket deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error deleting ticket', details: err.message });
+  }
+};
+
+module.exports = { createBoard, getBoards, addTicket, getTickets, updateTicket, deleteTicket };
