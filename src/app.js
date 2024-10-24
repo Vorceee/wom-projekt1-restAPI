@@ -20,22 +20,6 @@ app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/boards", require("./routes/boardRoutes"));
 app.use("/api/friends", require("./routes/friendRoutes"));
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public", "index.html"));
-});
-
-app.get("/signup", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public", "signup.html"));
-});
-
-app.get("/boards", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public", "boards.html"));
-});
-
-app.get("/board", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public", "board.html"));
-});
-
 const wss = new WebSocket.Server({ server });
 
 const clients = {};
