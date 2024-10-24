@@ -48,7 +48,20 @@ const login = async (req, res) => {
     } catch (err) {
       res.status(500).json({ error: 'Error logging in', details: err.message });
     }
-  };
-  
+};
 
-module.exports = { signup, login };
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true
+      }
+    });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: 'Error fetching users', details: err.message });
+  }
+};
+
+module.exports = { signup, login, getAllUsers };
