@@ -14,8 +14,6 @@ const server = http.createServer(app);
 app.use(cors());
 app.use(express.json());
 
-app.use(express.static(path.join(__dirname, "../public")));
-
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/boards", require("./routes/boardRoutes"));
 app.use("/api/friends", require("./routes/friendRoutes"));
