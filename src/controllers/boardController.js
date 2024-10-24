@@ -20,19 +20,21 @@ const createBoard = async (req, res) => {
 };
 
 const getBoards = async (req, res) => {
-  const { userId } = req.user;
+  const { userId } = req.user; 
 
   try {
     const boards = await prisma.board.findMany({
       where: {
         OR: [
           { ownerId: userId }, 
-          { participants: { some: { userId } } },  
+          { participants: { some: { userId } } } 
         ],
       },
       include: {
-        owner: true,
-        participants: true,
+        owner: true, 
+        participants: { 
+          include: { user: true } 
+        },
       },
     });
 
@@ -163,4 +165,53 @@ const deleteTicket = async (req, res) => {
   }
 };
 
-module.exports = { createBoard, getBoards, addTicket, getTickets, updateTicket, deleteTicket };
+const shareBoardWithFriend = async (req, res) => {
+  const { boardId } = req.params; 
+  const { friendId } = req.body; 
+  const { userId } = req.user;     
+
+  try {
+    const board = await prisma.board.findFirst({
+      where: {
+        id: boardId,
+        ownerId: userId,
+      },
+    });
+
+    if (!board) {
+      return res.status(403).json({ error: 'You do not have permission to share this board.' });
+    }
+    const friend = await prisma.friend.findFirst({
+      where: {
+        OR: [
+          { userId, friendId, status: 'accepted' },
+          { userId: friendId, friendId: userId, status: 'accepted' },
+        ],
+      },
+    });
+
+    if (!friend) {
+      return res.status(400).json({ error: 'The specified user is not your friend.' });
+    }
+    const existingParticipant = await prisma.boardParticipant.findFirst({
+      where: { boardId, userId: friendId },
+    });
+
+    if (existingParticipant) {
+      return res.status(400).json({ error: 'This user already has access to the board.' });
+    }
+    await prisma.boardParticipant.create({
+      data: {
+        boardId,
+        userId: friendId,
+      },
+    });
+
+    res.json({ message: 'Board shared successfully with your friend.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error sharing board', details: err.message });
+  }
+};
+
+
+module.exports = { createBoard, getBoards, addTicket, getTickets, updateTicket, deleteTicket, shareBoardWithFriend };
