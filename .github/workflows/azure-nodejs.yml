@@ -17,11 +17,15 @@ jobs:
       with:
         node-version: '20'  # Make sure this matches your Node.js version
 
+    - name: Azure Login
+      uses: Azure/login@v2.2.0
+  
+
     - run: npm install  # Install dependencies
 
     - name: 'Deploy to Azure Web App'
       uses: azure/webapps-deploy@v2
       with:
-        app-name: 'your-azure-app-name'  # Replace with your Azure App Service name
+        app-name: 'wom-projekt'  # Replace with your Azure App Service name
         slot-name: 'production'
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}  # Make sure this secret is set in GitHub
