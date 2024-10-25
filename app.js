@@ -62,10 +62,32 @@ wss.on('connection', function connection(ws) {
                 case 'deleteTicket':
                     boards[boardId] = boardState.filter(t => t.id !== msg.ticketId);
                     break;
-                case 'moveTicket':
+                case 'moveTicket': {
+                    const boardId = ws.boardId;
+                    if (!boardId) {
+                        console.error('No boardId associated with this connection');
+                        return;
+                    }
+                
+                    // Find the ticket and update its position
+                    let boardState = boards[boardId] || [];
                     const moveIndex = boardState.findIndex(t => t.id === msg.ticket.id);
-                    if (moveIndex !== -1) boardState[moveIndex].position = msg.ticket.position;
+                    if (moveIndex !== -1) {
+                        boardState[moveIndex].position = msg.ticket.position;
+                    }
+                
+                    // Save updated board state
+                    boards[boardId] = boardState;
+                
+                    // Broadcast the move event to all other clients
+                    clients[boardId].forEach(client => {
+                        if (client !== ws && client.readyState === WebSocket.OPEN) {
+                            client.send(JSON.stringify(msg)); // Send moveTicket update to other clients
+                        }
+                    });
                     break;
+                }
+
             }
             boards[boardId] = boardState;
             clients[boardId].forEach(client => {
