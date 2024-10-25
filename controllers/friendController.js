@@ -70,7 +70,14 @@ const getFriends = async (req, res) => {
           { friendId: userId, status: 'accepted' },
         ],
       },
-      include: { user: true, friend: true },  
+      include: { 
+        user: { 
+          select: { id: true, name: true } 
+        },
+        friend: { 
+          select: { id: true, name: true } 
+        }
+      },  
     });
 
     res.json(friends);
@@ -79,6 +86,7 @@ const getFriends = async (req, res) => {
   }
 };
 
+
 const getPendingFriendRequests = async (req, res) => {
   const { userId } = req.user;
 
@@ -86,14 +94,18 @@ const getPendingFriendRequests = async (req, res) => {
     const pendingRequests = await prisma.friend.findMany({
       where: {
         OR: [
-          { userId: userId, status: 'pending' }, // Sent requests by the user
-          { friendId: userId, status: 'pending' }, // Received requests to the user
+          { userId: userId, status: 'pending' },
+          { friendId: userId, status: 'pending' }, 
         ],
       },
       include: { 
-        user: true,   // Include details of the user who sent the request
-        friend: true  // Include details of the friend who received the request
-      },
+        user: { 
+          select: { id: true, name: true } 
+        },
+        friend: { 
+          select: { id: true, name: true } 
+        }
+      },  
     });
 
     res.json(pendingRequests);
@@ -101,5 +113,6 @@ const getPendingFriendRequests = async (req, res) => {
     res.status(500).json({ error: 'Error fetching pending friend requests', details: err.message });
   }
 };
+
 
 module.exports = { sendFriendRequest, respondToFriendRequest, getFriends, getPendingFriendRequests };
