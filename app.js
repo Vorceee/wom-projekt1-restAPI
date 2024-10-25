@@ -52,37 +52,77 @@ wss.on('connection', function connection(ws) {
 
             let boardState = boards[boardId] || [];
             switch (msg.type) {
-                case 'createTicket':
+                case 'createTicket': {
+                    const boardId = ws.boardId;
+                    if (!boardId) {
+                        console.error('No boardId associated with this connection');
+                        return;
+                    }
+                    let boardState = boards[boardId] || [];
                     boardState.push(msg.ticket);
+                    boards[boardId] = boardState;
+                    ws.send(JSON.stringify({ type: 'ackCreate', ticket: msg.ticket }));
+                    clients[boardId].forEach(client => {
+                        if (client !== ws && client.readyState === WebSocket.OPEN) {
+                            client.send(JSON.stringify(msg)); 
+                        }
+                    });
                     break;
-                case 'updateTicket':
+                }
+
+                case 'updateTicket': {
+                    const boardId = ws.boardId;
+                    if (!boardId) {
+                        console.error('No boardId associated with this connection');
+                        return;
+                    }
+                    let boardState = boards[boardId] || [];
                     const updateIndex = boardState.findIndex(t => t.id === msg.ticket.id);
-                    if (updateIndex !== -1) boardState[updateIndex] = msg.ticket;
+                    if (updateIndex !== -1) {
+                        boardState[updateIndex] = msg.ticket;
+                    }
+                
+                    boards[boardId] = boardState;
+                    ws.send(JSON.stringify({ type: 'ackUpdate', ticket: msg.ticket }));
+                    clients[boardId].forEach(client => {
+                        if (client !== ws && client.readyState === WebSocket.OPEN) {
+                            client.send(JSON.stringify(msg));
+                        }
+                    });
                     break;
-                case 'deleteTicket':
+                }
+
+                case 'deleteTicket': {
+                    const boardId = ws.boardId;
+                    if (!boardId) {
+                        console.error('No boardId associated with this connection');
+                        return;
+                    }
+                    let boardState = boards[boardId] || [];
                     boards[boardId] = boardState.filter(t => t.id !== msg.ticketId);
+                    clients[boardId].forEach(client => {
+                        if (client !== ws && client.readyState === WebSocket.OPEN) {
+                            client.send(JSON.stringify(msg)); 
+                        }
+                    });
                     break;
+                }
+
                 case 'moveTicket': {
                     const boardId = ws.boardId;
                     if (!boardId) {
                         console.error('No boardId associated with this connection');
                         return;
                     }
-                
-                    // Find the ticket and update its position
                     let boardState = boards[boardId] || [];
                     const moveIndex = boardState.findIndex(t => t.id === msg.ticket.id);
                     if (moveIndex !== -1) {
                         boardState[moveIndex].position = msg.ticket.position;
                     }
-                
-                    // Save updated board state
                     boards[boardId] = boardState;
-                
-                    // Broadcast the move event to all other clients
                     clients[boardId].forEach(client => {
                         if (client !== ws && client.readyState === WebSocket.OPEN) {
-                            client.send(JSON.stringify(msg)); // Send moveTicket update to other clients
+                            client.send(JSON.stringify(msg)); 
                         }
                     });
                     break;
