@@ -100,13 +100,16 @@ wss.on('connection', function connection(ws) {
                     }
                     let boardState = boards[boardId] || [];
                     boards[boardId] = boardState.filter(t => t.id !== msg.ticketId);
+
                     clients[boardId].forEach(client => {
                         if (client !== ws && client.readyState === WebSocket.OPEN) {
                             client.send(JSON.stringify(msg)); 
                         }
                     });
+                    console.log(`Ticket with ID ${msg.ticketId} deleted successfully.`);
                     break;
                 }
+
 
                 case 'moveTicket': {
                     const boardId = ws.boardId;
